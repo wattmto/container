@@ -11,7 +11,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* \
     && curl -fsSL "https://releases.nixos.org/nix/nix-${NIX_VERSION}/install" -o /tmp/install-nix \
     && mkdir -m 0755 /nix \
-    && sh /tmp/install-nix --no-daemon --yes \
+    && NIX_CONFIG='build-users-group =' sh /tmp/install-nix --no-daemon --yes \
     && rm /tmp/install-nix \
     && mkdir -p /etc/nix \
     && printf '%s\n' 'sandbox = false' 'build-users-group =' 'experimental-features = nix-command flakes' > /etc/nix/nix.conf \
