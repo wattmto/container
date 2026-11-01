@@ -10,6 +10,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends xz-utils \
     && rm -rf /var/lib/apt/lists/* \
     && curl -fsSL "https://releases.nixos.org/nix/nix-${NIX_VERSION}/install" -o /tmp/install-nix \
+    && mkdir -m 0755 /nix \
     && sh /tmp/install-nix --no-daemon --yes \
     && rm /tmp/install-nix \
     && mkdir -p /etc/nix \
