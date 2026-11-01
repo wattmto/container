@@ -11,7 +11,7 @@ GHCR パッケージの公開範囲は GitHub のパッケージ設定で変更�
 ローカルで派生イメージをビルドする場合は、ビルド済みのベースを指定してください。
 
 ```sh
-docker build --build-arg RAKAZO_BASE=ghcr.io/<owner>/rakazo-computer-base:<commit-sha> .
+docker build --build-arg RAKAZO_BASE=ghcr.io/<owner>/rakazo-computer-base:<commit-sha> rakazo-computer-nix
 ```
 
 Nix は uid 1000 でデーモンなしで動作し、コンテナ内のため Nix のビルドサンドボックスは無効です。

@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - Dockerfile
+      - rakazo-computer-nix/**
       - .github/workflows/rakazo-nix.yml
   workflow_dispatch:
 
@@ -49,7 +49,7 @@ jobs:
       - name: Build and push Nix image
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: rakazo-computer-nix
           platforms: linux/amd64,linux/arm64
           push: true
           build-args: |
