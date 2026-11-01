@@ -3,7 +3,7 @@
 Rakazo の computer イメージにシングルユーザー版 Nix を追加します。
 GitHub Actions は固定した upstream のコミットからベースイメージをビルドし、
 `linux/amd64` と `linux/arm64` のマルチアーキテクチャイメージを
-`ghcr.io/<owner>/rakazo-computer-nix:latest` およびコミット SHA タグで公開します。
+`ghcr.io/<owner>/rakazo-computer-nix:latest` および `sha-<コミット SHA>` タグで公開します。
 ベースイメージはビルド中のローカルレジストリにのみ保存します。
 
 PR、`main` への関連ファイルの push、または Actions の手動実行で同じ Dockerfile をビルドします。同一リポジトリからの PR では `pr-<番号>-<ヘッド SHA>` タグで公開し、`latest` は更新しません。フォークからの PR はビルドのみ行います。

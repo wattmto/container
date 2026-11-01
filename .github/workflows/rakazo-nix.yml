@@ -31,22 +31,16 @@ jobs:
         id: names
         shell: bash
         run: |
-          owner="${GITHUB_REPOSITORY_OWNER,,}"
           echo "base=localhost:5000/rakazo-computer-base:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
-          image="ghcr.io/${owner}/rakazo-computer-nix"
-          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
-            echo "tags=${image}:pr-${PR_NUMBER}-${PR_HEAD_SHA}" >> "$GITHUB_OUTPUT"
-          else
-            {
-              echo 'tags<<EOF'
-              echo "${image}:latest"
-              echo "${image}:${GITHUB_SHA}"
-              echo 'EOF'
-            } >> "$GITHUB_OUTPUT"
-          fi
-        env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      - name: Generate image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/rakazo-computer-nix
+          tags: |
+            type=raw,value=latest,enable=${{ github.event_name != 'pull_request' }}
+            type=sha,format=long,enable=${{ github.event_name != 'pull_request' }}
+            type=raw,value=pr-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }},enable=${{ github.event_name == 'pull_request' }}
       - uses: docker/setup-qemu-action@v3
       - name: Start local registry for the intermediate image
         run: docker run -d --restart=always -p 5000:5000 --name rakazo-build-registry registry:2
@@ -79,6 +73,7 @@ jobs:
           push: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
           build-args: |
             RAKAZO_BASE=${{ steps.names.outputs.base }}
-          tags: ${{ steps.names.outputs.tags }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=rakazo-nix
           cache-to: type=gha,mode=max,scope=rakazo-nix
