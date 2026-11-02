@@ -31,19 +31,32 @@ jobs:
         id: names
         shell: bash
         run: |
-          owner="${GITHUB_REPOSITORY_OWNER,,}"
-          echo "base=ghcr.io/${owner}/rakazo-computer-base:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
-          echo "image=ghcr.io/${owner}/rakazo-computer-nix" >> "$GITHUB_OUTPUT"
+          echo "base=localhost:5000/rakazo-computer-base:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+      - name: Generate image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/rakazo-computer-nix
+          tags: |
+            type=raw,value=latest,enable=${{ github.event_name != 'pull_request' }}
+            type=sha,format=long,enable=${{ github.event_name != 'pull_request' }}
+            type=raw,value=pr-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }},enable=${{ github.event_name == 'pull_request' }}
       - uses: docker/setup-qemu-action@v3
+      - name: Start local registry for the intermediate image
+        run: docker run -d --restart=always -p 5000:5000 --name rakazo-build-registry registry:2
       - uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: network=host
+          buildkitd-config-inline: |
+            [registry."localhost:5000"]
+              http = true
       - uses: docker/login-action@v3
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and push upstream base
-        if: github.event_name != 'pull_request'
+      - name: Build upstream base into local registry
         uses: docker/build-push-action@v6
         with:
           context: upstream/infra/sandboxes/computer
@@ -52,32 +65,15 @@ jobs:
           tags: ${{ steps.names.outputs.base }}
           cache-from: type=gha,scope=rakazo-base
           cache-to: type=gha,mode=max,scope=rakazo-base
-      - name: Prepare combined Dockerfile for pull requests
-        if: github.event_name == 'pull_request'
-        run: |
-          cp upstream/infra/sandboxes/computer/Dockerfile upstream/infra/sandboxes/computer/Dockerfile.pr
-          tail -n +4 rakazo-computer-nix/Dockerfile >> upstream/infra/sandboxes/computer/Dockerfile.pr
-      - name: Build image for pull request (no push)
-        if: github.event_name == 'pull_request'
-        uses: docker/build-push-action@v6
-        with:
-          context: upstream/infra/sandboxes/computer
-          file: upstream/infra/sandboxes/computer/Dockerfile.pr
-          platforms: linux/amd64,linux/arm64
-          push: false
-          cache-from: type=gha,scope=rakazo-pr
-          cache-to: type=gha,mode=max,scope=rakazo-pr
-      - name: Build and push Nix image
-        if: github.event_name != 'pull_request'
+      - name: Build Nix image
         uses: docker/build-push-action@v6
         with:
           context: rakazo-computer-nix
           platforms: linux/amd64,linux/arm64
-          push: true
+          push: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
           build-args: |
             RAKAZO_BASE=${{ steps.names.outputs.base }}
-          tags: |
-            ${{ steps.names.outputs.image }}:latest
-            ${{ steps.names.outputs.image }}:${{ github.sha }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=rakazo-nix
           cache-to: type=gha,mode=max,scope=rakazo-nix

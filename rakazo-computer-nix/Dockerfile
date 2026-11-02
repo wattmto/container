@@ -1,5 +1,5 @@
 # The base is built from rakazo's computer Dockerfile by the workflow.
-ARG RAKAZO_BASE=ghcr.io/wattmto/rakazo-computer-base:latest
+ARG RAKAZO_BASE=rakazo-computer-base:local
 FROM ${RAKAZO_BASE}
 
 USER root
