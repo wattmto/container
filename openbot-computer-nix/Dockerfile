@@ -16,12 +16,19 @@ RUN apt-get update \
     && mkdir -p /etc/nix \
     && printf '%s\n' 'sandbox = false' 'build-users-group =' 'experimental-features = nix-command flakes' > /etc/nix/nix.conf
 
+# Nix since 2.24 keeps its profile, channel and other state in the XDG state
+# dir, which defaults to $HOME/.local/state. HOME here is /data, the volume
+# with the OpenBot data: a Nix profile there is easy to lose in a restore. Put
+# the Nix state next to the store instead, so that a /nix volume keeps all of
+# it.
+ENV XDG_STATE_HOME=/nix/state
 USER 1000
 RUN curl -fsSL "https://releases.nixos.org/nix/nix-${NIX_VERSION}/install" -o /tmp/install-nix \
-    && NIX_CONFIG='build-users-group =' sh /tmp/install-nix --no-daemon --yes \
+    && NIX_CONFIG='build-users-group =' NIX_INSTALLER_NO_MODIFY_PROFILE=1 sh /tmp/install-nix --no-daemon --yes \
     && rm /tmp/install-nix
 
-ENV PATH=/nix/var/nix/profiles/profile/bin:${PATH} \
-    NIX_PATH=nixpkgs=https://github.com/NixOS/nixpkgs/archive/nixos-unstable.tar.gz
+# The installer adds nixpkgs-unstable as a channel, so `nix-shell -p` and
+# `nix run` resolve nixpkgs without extra configuration.
+ENV PATH=/nix/state/nix/profiles/profile/bin:${PATH}
 USER 1000
-RUN nix --version && nix store ping --store local
+RUN nix --version && nix store info

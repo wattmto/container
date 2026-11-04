@@ -18,6 +18,11 @@ docker build --build-arg OPENBOT_BASE=ghcr.io/nightly-labs/openbot:0.40.0 openbo
 
 Nix は uid 1000 でデーモンなしで動作し、コンテナ内のため Nix のビルドサンドボックスは無効です。
 `nix-command` と `flakes` を有効にしています。
+Nix の状態(プロファイル、チャンネル)は `XDG_STATE_HOME=/nix/state` でストアと同じ `/nix` に置いています。
+`$HOME/.local/state`(= `/data`)に置くと OpenBot のデータボリュームと混ざり、
+復元時や既存ボリュームで消えるためです。
+インストーラーが `nixpkgs-unstable` のチャンネルを追加するので、
+`nix-shell -p` や `nix run` は追加設定なしで nixpkgs を解決します。
 `NIX_PATH` は `nixos-unstable` を指すので、`nix-shell -p` や `nix run` がそのまま使えます。
 
 実行時の注意(公式 docs/docker.md 準拠):
